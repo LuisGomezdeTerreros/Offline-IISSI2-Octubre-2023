@@ -25,4 +25,24 @@ const restaurantHasNoOrders = async (req, res, next) => {
   }
 }
 
-export { checkRestaurantOwnership, restaurantHasNoOrders }
+const checkRestaurantSetOnline = async (req, res, next) => {
+  try {
+    const restaurant = await Restaurant.findByPk(req.params.restaurantId)
+
+    if (restaurant.status === 'closed' || restaurant.status === 'temporarily closed') {
+      return res.status(409).send('Some orders belong to this restaurant.')
+    } else {
+      const numberOfRestaurantOrders = await Order.count({
+        where: { restaurantId: req.params.restaurantId, deliveredAt: null }
+      })
+      if (numberOfRestaurantOrders === 0) {
+        return next()
+      }
+      return res.status(409).send('Some orders belong to this restaurant.')
+    }
+  } catch (err) {
+    return res.status(500).send(err.message)
+  }
+}
+
+export { checkRestaurantOwnership, restaurantHasNoOrders, checkRestaurantSetOnline }
